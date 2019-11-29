@@ -1,8 +1,16 @@
 # other repos / data i was looking at
 old/
 
-# large datasets (todo: make a small sample for the repo)
-data/
+# keep some large data files out of git
+data/ml-100k
+data/ml-20m/ratings.csv
+data/ml-20m/genome-scores.csv
+data/ml-20m/genome-tags.csv
+data/ml-20m/links.csv
+data/ml-20m/movies.csv
+data/ml-20m/tags.csv
+data/ml-20m.zip
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
