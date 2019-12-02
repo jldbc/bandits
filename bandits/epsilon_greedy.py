@@ -23,14 +23,14 @@ history = pd.DataFrame(data=None, columns=df.columns)
 history = history.astype({'movieId': 'int32', 'liked': 'float'})
 
 n = 5 # slate size
-epsilon = .05 # explore rate
+epsilon = .15 # explore rate
 
 # to speed this up, retrain the bandit every batch_size time steps
 # this lets us measure batch_size actions against a slate of recommendations rather than generating
 #      recs at each time step. this seems like the only way to make it through a large dataset like
 #      this and get a meaningful sample size with offline/replay evaluation
 rewards = []
-max_time = 100000 # total number of ratings to evaluate using the bandit
+max_time = 2000000 # total number of ratings to evaluate using the bandit
 batch_size = 100 # number of ratings to observe for each iteration of the bandit before generating new recs
 for t in range(max_time//batch_size): #df.t:
 	t = t * batch_size
@@ -52,6 +52,6 @@ for t in range(max_time//batch_size): #df.t:
 # todo: need better ways to evaluate than this. somethign about smoothed take rates
 # over time or batched take rate for every N trials.
 # make utils for this so they can be consistent across algos
-import matplotlib.pyplot as plt 
-plt.plot(np.cumsum(rewards))
-plt.show()
+
+print(np.mean(rewards))
+print(len(rewards))
