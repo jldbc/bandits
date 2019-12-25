@@ -3,8 +3,9 @@ from numpy.random import choice
 import pandas as pd
 import sys
 import math
+import matplotlib.pyplot as plt
 sys.path.insert(0, 'scripts/')
-from create_movielens_dataset import get_ratings
+from create_movielens_dataset import get_ratings_1m
 
 # taking guidance from this https://jeremykun.com/2013/11/08/adversarial-bandits-and-the-exp3-algorithm/
 
@@ -17,11 +18,13 @@ def score(history, df, t, batch_size, recs):
 	history = history.append(actions)
 	action_liked = actions[['movieId', 'liked']]
 	#print('{} : {}'.format(t, t+batch_size))
+	if t % 50000 == 0:
+		print('{} : {}'.format(t, t+batch_size))
 	return history, action_liked
 
 def distr(weights, gamma=0.0):
     weight_sum = float(sum(weights))
-    id_mapping = {movieId: }
+    #id_mapping = {movieId: }
     return tuple((1.0 - gamma) * (w / weight_sum) + (gamma / len(weights)) for w in weights)
 
 
@@ -42,8 +45,8 @@ def update_weights(weights, movieId_weight_mapping, probability_distribution, ac
 		weights[weight_idx] *= math.exp(estimated_reward * gamma / num_arms)
 	return weights
 
-df = get_ratings(min_number_of_reviews=20000)
-
+df = get_ratings_1m(min_number_of_reviews=1500)
+print(df.shape)
 
 # vv don't need this, should swap it out for the epsilon greedy initialization approach 
 # initialze history with 50% like rate, 8 ratings
@@ -69,8 +72,8 @@ n = 5 # slate size (it's more correct to server one at a time, but trains faster
 
 rewards = []
 num_arms = df.movieId.unique().shape[0]
-max_time = 1000000 # total number of ratings to evaluate using the bandit
-batch_size = 100 # number of ratings to observe for each iteration of the bandit before generating new recs
+max_time = df.shape[0] # total number of ratings to evaluate using the bandit
+batch_size = 10 # number of ratings to observe for each iteration of the bandit before generating new recs
 weights = [1.0] * df.movieId.unique().shape[0] # initialize one weight per arm
 movieId_weight_mapping = dict(map(lambda t: (t[1], t[0]), enumerate(df.movieId.unique())))
 gamma = .07

@@ -1,8 +1,9 @@
 import numpy as np
 import pandas as pd
 import sys
+import matplotlib.pyplot as plt 
 sys.path.insert(0, 'scripts/')
-from create_movielens_dataset import get_ratings
+from create_movielens_dataset import get_ratings_1m
 
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
 
@@ -14,10 +15,18 @@ def score(history, df, t, batch_size, recs):
 	# add row to history if recs match logging policy
 	history = history.append(actions)
 	action_liked = actions.liked.tolist()
-	#print('{} : {}'.format(t, t+batch_size))
+	if t % 1000 == 0:
+		print('{} : {}'.format(t, t+batch_size))
+		if history.shape[0] > 0:
+			scores = history.loc[history.t<=t, ['title', 'liked']].groupby('title').agg({'liked': ['mean', 'count', 'std']})
+			scores.columns = ['mean', 'count', 'std']
+			scores['ucb'] = scores['mean'] + (1.96 * scores['std'] / np.sqrt(scores['count'])) #np.sqrt((2 * np.log(1/scores['std']))/scores['count'])
+			scores = scores.sort_values('ucb', ascending=False)
+			scores = scores.reset_index()
+			print(scores[['title', 'count', 'mean', 'std', 'ucb']].head(10))
 	return history, action_liked
 
-df = get_ratings(min_number_of_reviews=20000)
+df = get_ratings_1m(min_number_of_reviews=1500)
 
 
 # initialze history with 50% like rate, 8 ratings
@@ -49,8 +58,8 @@ n = 5 # slate size (it's more correct to server one at a time, but trains faster
 ucb_history = pd.DataFrame(data=None, columns = ['mean', 'count', 'std', 'ucb', 'movieId', 'iter']) # for post-analysis of ucbs over iterations
 rewards = []
 ucb_checkpoints = []
-max_time = 500000 # total number of ratings to evaluate using the bandit
-batch_size = 100 # number of ratings to observe for each iteration of the bandit before generating new recs
+max_time = df.shape[0] # total number of ratings to evaluate using the bandit
+batch_size = 10 # number of ratings to observe for each iteration of the bandit before generating new recs
 i = 1
 for t in range(max_time//batch_size): #df.t:
 	t = t * batch_size
@@ -76,7 +85,6 @@ for t in range(max_time//batch_size): #df.t:
 # todo: need better ways to evaluate than this. somethign about smoothed take rates
 # over time or batched take rate for every N trials.
 # make utils for this so they can be consistent across algos
-import matplotlib.pyplot as plt 
 # plot cumulative gain
 #plt.plot(np.cumsum(rewards), label='.05')
 #plt.legend()
@@ -98,7 +106,6 @@ plt.show()
 plt.plot(pd.Series(rewards).rolling(200).mean(), label='ucb')
 plt.legend()
 plt.show()
-
 
 
 print(np.mean(rewards))

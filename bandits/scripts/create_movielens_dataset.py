@@ -14,32 +14,32 @@ def read_data_20m():
 
 def read_data_1m():
 	print('reading movielens 1m data')
-	ratings = pd.read_csv('../../data/ml-1m/ratings.dat', 
+	ratings = pd.read_csv('../data/ml-1m/ratings.dat', 
 		sep='::',
 		names=[
-			'user_id',
-			'movie_id',
+			'userId',
+			'movieId',
 			'rating',
 			'ts'
 		])
-	movies = pd.read_csv('../../data/ml-1m/movies.dat', 
+	movies = pd.read_csv('../data/ml-1m/movies.dat', 
 		sep='::',
 		names=[
-			'movie_id',
+			'movieId',
 			'title',
 			'genres'
 		])
-	users = pd.read_csv('../../data/ml-1m/users.dat', 
+	users = pd.read_csv('../data/ml-1m/users.dat', 
 		sep='::', 
 		names = [
-			'user_id',
+			'userId',
 			'gender',
 			'age',
 			'occupation',
 			'zip'
 		])
-	logs = ratings.join(movies, on='movie_id', how='left', rsuffix='_movie')
-	logs = logs.join(users, on='user_id', how='left', rsuffix='_movie')
+	logs = ratings.join(movies, on='movieId', how='left', rsuffix='_movie')
+	logs = logs.join(users, on='userId', how='left', rsuffix='_movie')
 	return logs
 
 def process_title():
@@ -65,9 +65,9 @@ def preprocess_movie_data_20m(logs, min_number_of_reviews=20000):
 def preprocess_movie_data_1m(logs, min_number_of_reviews=1000):
 	print('preparing ratings log')
 	# remove ratings of movies with < N ratings. too few ratings will cause the recsys to get stuck in offline evaluation
-	movies_to_keep = pd.DataFrame(logs.movie_id.value_counts())\
-		.loc[pd.DataFrame(logs.movie_id.value_counts())['movie_id']>=min_number_of_reviews].index
-	logs = logs.loc[logs['movie_id'].isin(movies_to_keep)]
+	movies_to_keep = pd.DataFrame(logs.movieId.value_counts())\
+		.loc[pd.DataFrame(logs.movieId.value_counts())['movieId']>=min_number_of_reviews].index
+	logs = logs.loc[logs['movieId'].isin(movies_to_keep)]
 	# shuffle rows to deibas order of user ids
 	logs = logs.sample(frac=1)
 	# create a 't' column to represent time steps for the bandit to simulate a live learning scenario
@@ -83,7 +83,7 @@ def get_ratings_20m(min_number_of_reviews=20000):
 
 def get_ratings_1m(min_number_of_reviews=1000):
 	logs = read_data_1m()
-	logs = preprocess_movie_data_1m(logs, min_number_of_reviews=1000)
+	logs = preprocess_movie_data_1m(logs, min_number_of_reviews=min_number_of_reviews)
 	return logs
 
 def __init__():

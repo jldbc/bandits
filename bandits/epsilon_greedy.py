@@ -1,8 +1,9 @@
 import numpy as np
 import pandas as pd
 import sys
+import matplotlib.pyplot as plt
 sys.path.insert(0, 'scripts/')
-from create_movielens_dataset import get_ratings
+from create_movielens_dataset import get_ratings_1m
 
 def score(history, df, t, batch_size, recs):
 	# https://arxiv.org/pdf/1003.5956.pdf
@@ -12,10 +13,20 @@ def score(history, df, t, batch_size, recs):
 	# add row to history if recs match logging policy
 	history = history.append(actions)
 	action_liked = actions.liked.tolist()
-	print('{} : {}'.format(t, t+batch_size))
+	if t % 1000 == 0:
+		print('{} : {}'.format(t, t+batch_size))
+		'''
+		if history.shape[0] > 0:
+			print(history.head())
+			temp = history.loc[history.t<=t, ['title', 'liked']].groupby('title').agg({'liked': ['mean', 'count']})
+			temp.columns = ['mean', 'count']
+			temp = temp.sort_values('mean', ascending=False)
+			print(temp.head(10))
+		'''
 	return history, action_liked
 
-df = get_ratings(min_number_of_reviews=20000)
+df = get_ratings_1m(min_number_of_reviews=1500)
+print(len(df.movieId.unique()))
 
 # initialize empty history 
 # (offline eval means you can only add to history when rec matches historic data)
@@ -30,8 +41,8 @@ epsilon = .15 # explore rate
 #      recs at each time step. this seems like the only way to make it through a large dataset like
 #      this and get a meaningful sample size with offline/replay evaluation
 rewards = []
-max_time = 2000000 # total number of ratings to evaluate using the bandit
-batch_size = 100 # number of ratings to observe for each iteration of the bandit before generating new recs
+max_time = df.shape[0] # total number of ratings to evaluate using the bandit
+batch_size = 10 # number of ratings to observe for each iteration of the bandit before generating new recs
 for t in range(max_time//batch_size): #df.t:
 	t = t * batch_size
 	# choose to explore epsilon % of the time 
@@ -55,3 +66,7 @@ for t in range(max_time//batch_size): #df.t:
 
 print(np.mean(rewards))
 print(len(rewards))
+
+plt.plot(pd.Series(rewards).rolling(200).mean(), label='epsilon greedy')
+plt.legend()
+plt.show()
