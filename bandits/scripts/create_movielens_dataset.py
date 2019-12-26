@@ -3,10 +3,10 @@ import numpy as np
 
 def read_data_20m():
 	print('reading movielens 20m data')
-	ratings = pd.read_csv('../data/ml-20m/ratings.csv')
-	movies = pd.read_csv('../data/ml-20m/movies.csv')
-	links = pd.read_csv('../data/ml-20m/links.csv')
-	tags = pd.read_csv('../data/ml-20m/tags.csv')
+	ratings = pd.read_csv('../data/ml-20m/ratings.csv', engine='python')
+	movies = pd.read_csv('../data/ml-20m/movies.csv', engine='python')
+	links = pd.read_csv('../data/ml-20m/links.csv', engine='python')
+	tags = pd.read_csv('../data/ml-20m/tags.csv', engine='python')
 	movies = movies.join(movies.genres.str.get_dummies().astype(bool))
 	movies.drop('genres', inplace=True, axis=1)
 	logs = ratings.join(movies, on='movieId', how='left', rsuffix='_movie')
@@ -21,14 +21,16 @@ def read_data_1m():
 			'movieId',
 			'rating',
 			'ts'
-		])
+		],
+		engine='python')
 	movies = pd.read_csv('../data/ml-1m/movies.dat', 
 		sep='::',
 		names=[
 			'movieId',
 			'title',
 			'genres'
-		])
+		],
+		engine='python')
 	users = pd.read_csv('../data/ml-1m/users.dat', 
 		sep='::', 
 		names = [
@@ -37,7 +39,8 @@ def read_data_1m():
 			'age',
 			'occupation',
 			'zip'
-		])
+		],
+		engine='python')
 	logs = ratings.join(movies, on='movieId', how='left', rsuffix='_movie')
 	logs = logs.join(users, on='userId', how='left', rsuffix='_movie')
 	return logs
