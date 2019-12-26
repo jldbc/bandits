@@ -51,6 +51,8 @@ for t in range(max_time//args.batch_size): #df.t:
 	t = t * args.batch_size
 	scores = history.loc[history.t<=t, ['movieId', 'liked']].groupby('movieId').agg({'liked': ['mean', 'count', 'std']})
 	scores.columns = ['mean', 'count', 'std']
+	# todo: test this, this is the version i see more people using  (ucb just a function of how many rounds deep vs. number of pulls for each arm )
+	# scores['mean'] + math.sqrt((2 * math.log(t/args.batch_size)) / float(scores['count]))
 	scores['ucb'] = scores['mean'] + (args.ucb_scale * scores['std'] / np.sqrt(scores['count']))
 	scores['movieId'] = scores.index
 	scores = scores.sort_values('ucb', ascending=False)
