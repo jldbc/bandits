@@ -105,5 +105,7 @@ with open(full_filename + '.csv','w') as file:
 with open(full_filename + '_raw.csv','w') as file:
 	file.write(str(rewards))
 
-plt.plot(pd.Series(rewards).rolling(200).mean(), label='gamma')
+cumulative_avg = np.cumsum(rewards) / np.linspace(1, len(rewards), len(rewards))
+plt.plot(pd.Series(rewards).rolling(200).mean(), label='epsilon')
+plt.plot(cumulative_avg, label='epsilon')
 plt.savefig(full_filename + '_training_avg_reward.png', dpi = 300)
