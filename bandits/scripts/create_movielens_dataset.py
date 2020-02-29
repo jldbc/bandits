@@ -3,10 +3,10 @@ import numpy as np
 
 def read_data_20m():
 	print('reading movielens 20m data')
-	ratings = pd.read_csv('../data/ml-20m/ratings.csv', engine='python')
-	movies = pd.read_csv('../data/ml-20m/movies.csv', engine='python')
-	links = pd.read_csv('../data/ml-20m/links.csv', engine='python')
-	tags = pd.read_csv('../data/ml-20m/tags.csv', engine='python')
+	ratings = pd.read_csv('../data/ml-25m/ratings.csv', engine='python')
+	movies = pd.read_csv('../data/ml-25m/movies.csv', engine='python')
+	links = pd.read_csv('../data/ml-25m/links.csv', engine='python')
+	tags = pd.read_csv('../data/ml-25m/tags.csv', engine='python')
 	movies = movies.join(movies.genres.str.get_dummies().astype(bool))
 	movies.drop('genres', inplace=True, axis=1)
 	logs = ratings.join(movies, on='movieId', how='left', rsuffix='_movie')

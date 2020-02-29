@@ -7,7 +7,7 @@ from utils import score
 import matplotlib.pyplot as plt
 import argparse
 sys.path.insert(0, 'scripts/')
-from create_movielens_dataset import get_ratings_1m
+from create_movielens_dataset import get_ratings_1m, get_ratings_20m
 
 # taking guidance from this https://jeremykun.com/2013/11/08/adversarial-bandits-and-the-exp3-algorithm/
 
@@ -19,13 +19,14 @@ parser.add_argument('--gamma', '--gamma', help="scale factor for ucb calculation
 parser.add_argument('--batch_size', '--batch_size', help="number of user sessions to observe for each iteration of the bandit", type= int, default= 10)
 parser.add_argument('--min_review_count', '--min_review_count', help="number of reviews a movie needs to be in the dataset", type= int, default= 1500)
 parser.add_argument('--result_dir', '--result_dir', help="number of reviews a movie needs to be in the dataset", type= str, default= '/Users/jamesledoux/Documents/bandits/results/')
+parser.add_argument('--verbose', '--verbose', help="TRUE if you want updates on training progress", type= str, default= 'TRUE')
 
 args = parser.parse_args()
 
 print("Running UCB1 Bandit with: batch size {}, slate size {}, gamma {}, and a minimum of {} reviews per movie in the dataset"\
 	.format(args.batch_size, args.n, args.gamma, args.min_review_count))
 
-df = get_ratings_1m(min_number_of_reviews=args.min_review_count)
+df = get_ratings_20m(min_number_of_reviews=args.min_review_count)
 
 
 def distr(weights, gamma=0.0):
@@ -79,6 +80,9 @@ movieId_weight_mapping = dict(map(lambda t: (t[1], t[0]), enumerate(df.movieId.u
 i = 1
 for t in range(max_time//args.batch_size): #df.t:
 	t = t * args.batch_size
+	if t % 100000 == 0:
+		if args.verbose == 'TRUE':
+			print(t)
 	probability_distribution = distr(weights, args.gamma)
 	recs = draw(probability_distribution, n_recs=args.n)
 	history, action_score = score(history, df, t, args.batch_size, recs)

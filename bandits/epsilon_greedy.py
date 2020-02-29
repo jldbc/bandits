@@ -5,24 +5,25 @@ import matplotlib.pyplot as plt
 from utils import score
 import argparse
 sys.path.insert(0, 'scripts/')
-from create_movielens_dataset import get_ratings_1m
+from create_movielens_dataset import get_ratings_1m, get_ratings_20m
 
 
 # command line args for experiment params
-# example: python3 epsilon_greedy.py --n=5 --epsilon=0.15 --batch_size=100 --min_review_count=1500
+# example: python3 epsilon_greedy.py --n=5 --epsilon=0.15 --batch_size=1000 --min_review_count=1500
 parser = argparse.ArgumentParser()
 parser.add_argument('--n', '--n', help="slate size (number of recs per iteration)", type= int, default= 5)
 parser.add_argument('--epsilon', '--epsilon', help="scale factor for ucb calculation (1.96 is a 95 percent ucb)", type= float, default= 0.15)
 parser.add_argument('--batch_size', '--batch_size', help="number of user sessions to observe for each iteration of the bandit", type= int, default= 10)
 parser.add_argument('--min_review_count', '--min_review_count', help="number of reviews a movie needs to be in the dataset", type= int, default= 1500)
 parser.add_argument('--result_dir', '--result_dir', help="number of reviews a movie needs to be in the dataset", type= str, default= '/Users/jamesledoux/Documents/bandits/results/')
+parser.add_argument('--verbose', '--verbose', help="TRUE if you want updates on training progress", type= str, default= 'TRUE')
 
 args = parser.parse_args()
 
 print("Running UCB1 Bandit with: batch size {}, slate size {}, epsilon {}, and a minimum of {} reviews per movie in the dataset"\
 	.format(args.batch_size, args.n, args.epsilon, args.min_review_count))
 
-df = get_ratings_1m(min_number_of_reviews=args.min_review_count)
+df = get_ratings_20m(min_number_of_reviews=args.min_review_count)
 
 # initialize empty history 
 # (offline eval means you can only add to history when rec matches historic data)
@@ -37,6 +38,9 @@ rewards = []
 max_time = df.shape[0] # total number of ratings to evaluate using the bandit
 for t in range(max_time//args.batch_size): #df.t:
 	t = t * args.batch_size
+	if t % 100000 == 0:
+		if args.verbose == 'TRUE':
+			print(t)
 	# choose to explore epsilon % of the time 
 	explore = np.random.binomial(1, args.epsilon)
 	if explore == 1 or history.shape[0]==0:
