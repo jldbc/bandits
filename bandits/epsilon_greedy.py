@@ -20,6 +20,27 @@ parser.add_argument('--verbose', '--verbose', help="TRUE if you want updates on 
 
 args = parser.parse_args()
 
+def epsilon_greedy_policy(df, arms, epsilon=0.15, slate_size=5, batch_size=50):
+    '''
+    df: dataset to apply the policy to
+    epsilon: float. represents the % of timesteps where we explore random arms
+    slate_size: int. the number of recommendations to make at each step.
+    batch_size: int. the number of users to serve these recommendations to before updating the bandit's policy.
+    '''
+    # draw a 0 or 1 from a binomial distribution, with epsilon% likelihood of drawing a 1
+    explore = np.random.binomial(1, epsilon)
+    # if explore: shuffle movies to choose a random set of recommendations
+    if explore == 1 or df.shape[0]==0:
+        recs = np.random.choice(arms, size=(slate_size), replace=False)
+    # if exploit: sort movies by "like rate", recommend movies with the best performance so far
+    else:
+        scores = df[['movieId', 'liked']].groupby('movieId').agg({'liked': ['mean', 'count']})
+        scores.columns = ['mean', 'count']
+        scores['movieId'] = scores.index
+        scores = scores.sort_values('mean', ascending=False)
+        recs = scores.loc[scores.index[0:slate_size], 'movieId'].values
+    return recs
+
 print("Running UCB1 Bandit with: batch size {}, slate size {}, epsilon {}, and a minimum of {} reviews per movie in the dataset"\
 	.format(args.batch_size, args.n, args.epsilon, args.min_review_count))
 
@@ -41,17 +62,8 @@ for t in range(max_time//args.batch_size): #df.t:
 	if t % 100000 == 0:
 		if args.verbose == 'TRUE':
 			print(t)
-	# choose to explore epsilon % of the time 
-	explore = np.random.binomial(1, args.epsilon)
-	if explore == 1 or history.shape[0]==0:
-		# shuffle movies to choose a random slate
-		recs = np.random.choice(df.movieId.unique(), size=(args.n), replace=False)
-	else:
-		scores = history.loc[history.t<=t, ['movieId', 'liked']].groupby('movieId').agg({'liked': ['mean', 'count']})
-		scores.columns = ['mean', 'count']
-		scores['movieId'] = scores.index
-		scores = scores.sort_values('mean', ascending=False)
-		recs = scores.loc[scores.index[0:args.n], 'movieId'].values
+	# choose which arm to pull
+	recs = epsilon_greedy_policy(df=history.loc[history.t<=t,], arms=df.movieId.unique(), epsilon=args.epsilon, slate_size=args.n, batch_size=args.batch_size)
 	history, action_score = score(history, df, t, args.batch_size, recs)
 	if action_score is not None:
 		action_score = action_score.liked.tolist()
