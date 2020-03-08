@@ -15,6 +15,7 @@ parser.add_argument('--n', '--n', help="slate size (number of recs per iteration
 parser.add_argument('--epsilon', '--epsilon', help="scale factor for ucb calculation (1.96 is a 95 percent ucb)", type= float, default= 0.15)
 parser.add_argument('--batch_size', '--batch_size', help="number of user sessions to observe for each iteration of the bandit", type= int, default= 10)
 parser.add_argument('--min_review_count', '--min_review_count', help="number of reviews a movie needs to be in the dataset", type= int, default= 1500)
+parser.add_argument('--balanced_classes', '--balanced_classes', help="T/F for whether each movie gets an equal number of ratings in the dataset", type= bool, default= True)
 parser.add_argument('--result_dir', '--result_dir', help="number of reviews a movie needs to be in the dataset", type= str, default= '/Users/jamesledoux/Documents/bandits/results/')
 parser.add_argument('--verbose', '--verbose', help="TRUE if you want updates on training progress", type= str, default= 'TRUE')
 
@@ -44,7 +45,7 @@ def epsilon_greedy_policy(df, arms, epsilon=0.15, slate_size=5, batch_size=50):
 print("Running UCB1 Bandit with: batch size {}, slate size {}, epsilon {}, and a minimum of {} reviews per movie in the dataset"\
 	.format(args.batch_size, args.n, args.epsilon, args.min_review_count))
 
-df = get_ratings_20m(min_number_of_reviews=args.min_review_count)
+df = get_ratings_20m(min_number_of_reviews=args.min_review_count, balanced_classes=args.balanced_classes)
 
 # initialize empty history 
 # (offline eval means you can only add to history when rec matches historic data)

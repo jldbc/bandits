@@ -18,6 +18,7 @@ parser.add_argument('--n', '--n', help="slate size (number of recs per iteration
 parser.add_argument('--gamma', '--gamma', help="scale factor for ucb calculation (1.96 is a 95 percent ucb)", type= float, default= 0.7)
 parser.add_argument('--batch_size', '--batch_size', help="number of user sessions to observe for each iteration of the bandit", type= int, default= 10)
 parser.add_argument('--min_review_count', '--min_review_count', help="number of reviews a movie needs to be in the dataset", type= int, default= 1500)
+parser.add_argument('--balanced_classes', '--balanced_classes', help="T/F for whether each movie gets an equal number of ratings in the dataset", type= bool, default= True)
 parser.add_argument('--result_dir', '--result_dir', help="number of reviews a movie needs to be in the dataset", type= str, default= '/Users/jamesledoux/Documents/bandits/results/')
 parser.add_argument('--verbose', '--verbose', help="TRUE if you want updates on training progress", type= str, default= 'TRUE')
 
@@ -26,7 +27,7 @@ args = parser.parse_args()
 print("Running UCB1 Bandit with: batch size {}, slate size {}, gamma {}, and a minimum of {} reviews per movie in the dataset"\
 	.format(args.batch_size, args.n, args.gamma, args.min_review_count))
 
-df = get_ratings_20m(min_number_of_reviews=args.min_review_count)
+df = get_ratings_20m(min_number_of_reviews=args.min_review_count, balanced_classes=args.balanced_classes)
 
 
 def distr(weights, gamma=0.0):
@@ -34,20 +35,20 @@ def distr(weights, gamma=0.0):
     return tuple((1.0 - gamma) * (w / weight_sum) + (gamma / len(weights)) for w in weights)
 
 def draw(probability_distribution, n_recs=1):
-	arm = choice(df.movieId.unique(), size=n_recs,
-              p=probability_distribution, replace=False)
-	return arm
+    arm = choice(df.movieId.unique(), size=n_recs,
+        p=probability_distribution, replace=False)
+    return arm
 
 def update_weights(weights, gamma, movieId_weight_mapping, probability_distribution, actions):
-	# iter through actions. up to n updates / rec
-	if actions.shape[0] == 0:
-		return weights
-	for a in range(actions.shape[0]):
-		action = actions[a:a+1]
-		weight_idx = movieId_weight_mapping[action.movieId.values[0]]
-		estimated_reward = 1.0 * action.liked.values[0] / probability_distribution[weight_idx]
-		weights[weight_idx] *= math.exp(estimated_reward * gamma / num_arms)
-	return weights
+    # iter through actions. up to n updates / rec
+    if actions.shape[0] == 0:
+        return weights
+    for a in range(actions.shape[0]):
+        action = actions[a:a+1]
+        weight_idx = movieId_weight_mapping[action.movieId.values[0]]
+        estimated_reward = 1.0 * action.liked.values[0] / probability_distribution[weight_idx]
+        weights[weight_idx] *= math.exp(estimated_reward * gamma / num_arms)
+    return weights
 
 def exp3_policy(df, history, t, weights, movieId_weight_mapping, gamma, n_recs, batch_size):
     '''
@@ -62,12 +63,12 @@ def exp3_policy(df, history, t, weights, movieId_weight_mapping, gamma, n_recs, 
         n_recs: int. Number of recommendations to generate in each iteration. 
         batch_size: int. Number of observations to show recommendations to in each iteration.
     '''
-	probability_distribution = distr(weights, gamma)
-	recs = draw(probability_distribution, n_recs=n_recs)
-	history, action_score = score(history, df, t, batch_size, recs)
-	weights = update_weights(weights, gamma, movieId_weight_mapping, probability_distribution, action_score)
-	action_score = action_score.liked.tolist()
-	return history, action_score, weights
+    probability_distribution = distr(weights, gamma)
+    recs = draw(probability_distribution, n_recs=n_recs)
+    history, action_score = score(history, df, t, batch_size, recs)
+    weights = update_weights(weights, gamma, movieId_weight_mapping, probability_distribution, action_score)
+    action_score = action_score.liked.tolist()
+    return history, action_score, weights
 
 # vv don't need this, should swap it out for the epsilon greedy initialization approach 
 # initialze history with 50% like rate, 8 ratings

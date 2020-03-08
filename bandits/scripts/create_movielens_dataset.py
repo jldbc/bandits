@@ -51,12 +51,15 @@ def process_title():
 def process_genres():
 	pass
 
-def preprocess_movie_data_20m(logs, min_number_of_reviews=20000):
+def preprocess_movie_data_20m(logs, min_number_of_reviews=20000, balanced_classes=False):
 	print('preparing ratings log')
 	# remove ratings of movies with < N ratings. too few ratings will cause the recsys to get stuck in offline evaluation
 	movies_to_keep = pd.DataFrame(logs.movieId.value_counts())\
 		.loc[pd.DataFrame(logs.movieId.value_counts())['movieId']>=min_number_of_reviews].index
 	logs = logs.loc[logs['movieId'].isin(movies_to_keep)]
+	if balanced_classes is True:
+		logs = logs.groupby('movieId')
+		logs = logs.apply(lambda x: x.sample(logs.size().min()).reset_index(drop=True))
 	# shuffle rows to deibas order of user ids
 	logs = logs.sample(frac=1)
 	# create a 't' column to represent time steps for the bandit to simulate a live learning scenario
@@ -79,9 +82,9 @@ def preprocess_movie_data_1m(logs, min_number_of_reviews=1000):
 	logs['liked'] = logs['rating'].apply(lambda x: 1 if x >= 4.5 else 0)
 	return logs
 
-def get_ratings_20m(min_number_of_reviews=20000):
+def get_ratings_20m(min_number_of_reviews=20000, balanced_classes=False):
 	logs = read_data_20m()
-	logs = preprocess_movie_data_20m(logs, min_number_of_reviews=20000)
+	logs = preprocess_movie_data_20m(logs, min_number_of_reviews=20000, balanced_classes=balanced_classes)
 	return logs
 
 def get_ratings_1m(min_number_of_reviews=1000):
