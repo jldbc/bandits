@@ -21,32 +21,28 @@ parser.add_argument('--verbose', '--verbose', help="TRUE if you want updates on 
 
 args = parser.parse_args()
 
-def ucb1_policy(df, ucb_scale):
+def ucb1_policy(df, t, ucb_scale=2.0):
 	'''
-	tktktk 
-	clean this up, parameterize it, explain it better in code comments, 
-		and make sure this implementation is the same as the math i explain in the post
+	Applies UCB1 policy to generate movie recommendations
+	args:
+		df: dataframe. Dataset to apply UCB policy to.
+		ucb_scale: float. Most implementations use 2.0.
+		t: int. represents the current time step.
 	'''
 	scores = df[['movieId', 'liked']].groupby('movieId').agg({'liked': ['mean', 'count', 'std']})
 	scores.columns = ['mean', 'count', 'std']
-	# todo: test this, this is the version i see more people using  (ucb just a function of how many rounds deep vs. number of pulls for each arm )
-	# todo: implement decay in this
 	scores['ucb'] = scores['mean'] + np.sqrt(
 			(
-				(ucb_scale * np.log10(df.shape[0])) /  # t / args.batch_size
+				(ucb_scale * np.log10(t)) /
 				scores['count']
 			)
 		)
-	#scores['ucb'] = scores['mean'] + (args.ucb_scale * scores['std'] / np.sqrt(scores['count']))
+	# for a bayesian ucb:
+	#scores['ucb'] = scores['mean'] + (ucb_scale * scores['std'] / np.sqrt(scores['count']))
 	scores['movieId'] = scores.index
 	scores = scores.sort_values('ucb', ascending=False)
 	recs = scores.loc[scores.index[0:args.n], 'movieId'].values
 	return recs
-
-
-# tk: fit this into the below stuff
-#history, action_score = score(history, df, t, args.batch_size, recs)
-#return history, action_score
 
 print("Running UCB1 Bandit with: batch size {}, slate size {}, ucb multiplier {}, and a minimum of {} reviews per movie in the dataset"\
 	.format(args.batch_size, args.n, args.ucb_scale, args.min_review_count))
@@ -85,7 +81,7 @@ for t in range(1, max_time//args.batch_size): #df.t:
 	if t % 100000 == 0:
 		if args.verbose == 'TRUE':
 			print(t)
-	recs = ucb1_policy(df=history.loc[history.t<=t,], ucb_scale=args.ucb_scale)
+	recs = ucb1_policy(df=history.loc[history.t<=t,], t = t/args.batch_size, ucb_scale=args.ucb_scale)
 	history, action_score = score(history, df, t, args.batch_size, recs)
 	if action_score is not None:
 		action_score = action_score.liked.tolist()
@@ -118,6 +114,3 @@ plt.savefig(full_filename + '_training_avg_reward.png', dpi = 300)
 
 print(pd.Series(rewards).rolling(200).mean())
 print(cumulative_avg)
-
-#pd.set_option('display.max_rows', None)
-#scores[['ucb', 'mean']].plot.scatter(x='mean', y='ucb')
