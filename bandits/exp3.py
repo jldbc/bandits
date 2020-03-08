@@ -52,6 +52,13 @@ def update_weights(weights, movieId_weight_mapping, probability_distribution, ac
 		weights[weight_idx] *= math.exp(estimated_reward * args.gamma / num_arms)
 	return weights
 
+def exp3_policy(df, history, t, weights, gamma, n_recs, batch_size):
+	probability_distribution = distr(weights, gamma)
+	recs = draw(probability_distribution, n_recs=n_recs)
+	history, action_score = score(history, df, t, batch_size, recs)
+	weights = update_weights(weights, movieId_weight_mapping, probability_distribution, action_score)
+	action_score = action_score.liked.tolist()
+	return history, action_score, weights
 
 # vv don't need this, should swap it out for the epsilon greedy initialization approach 
 # initialze history with 50% like rate, 8 ratings
@@ -83,12 +90,7 @@ for t in range(max_time//args.batch_size): #df.t:
 	if t % 100000 == 0:
 		if args.verbose == 'TRUE':
 			print(t)
-	probability_distribution = distr(weights, args.gamma)
-	recs = draw(probability_distribution, n_recs=args.n)
-	history, action_score = score(history, df, t, args.batch_size, recs)
-	weights = update_weights(weights, movieId_weight_mapping, probability_distribution, action_score)
-	action_score = action_score.liked.tolist()
-	#print(weights)
+	history, action_score, weights = exp3_policy(df, history, t, weights, args.gamma, args.n, args.batch_size)	
 	rewards.extend(action_score)
 
 
