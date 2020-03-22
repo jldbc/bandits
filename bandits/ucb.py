@@ -19,6 +19,7 @@ parser.add_argument('--min_review_count', '--min_review_count', help="number of 
 parser.add_argument('--balanced_classes', '--balanced_classes', help="T/F for whether each movie gets an equal number of ratings in the dataset", type= bool, default= True)
 parser.add_argument('--result_dir', '--result_dir', help="directory for results to be saved", type= str, default= '/Users/jamesledoux/Documents/bandits/results/')
 parser.add_argument('--verbose', '--verbose', help="TRUE if you want updates on training progress", type= str, default= 'TRUE')
+parser.add_argument('--bayesian', '--bayesian', help="TRUE if you want to run bayesian ucb, false if ucb1", type= str, default= 'FALSE')
 
 args = parser.parse_args()
 
@@ -32,21 +33,22 @@ def ucb1_policy(df, t, ucb_scale=2.0):
 	'''
 	scores = df[['movieId', 'liked']].groupby('movieId').agg({'liked': ['mean', 'count', 'std']})
 	scores.columns = ['mean', 'count', 'std']
-	scores['ucb'] = scores['mean'] + np.sqrt(
-			(
-				(ucb_scale * np.log10(t)) /
-				scores['count']
+	if args.bayesian == 'TRUE':
+		scores['ucb'] = scores['mean'] + (ucb_scale * scores['std'] / np.sqrt(scores['count']))
+	else:
+		scores['ucb'] = scores['mean'] + np.sqrt(
+				(
+					(2 * np.log10(t)) /
+					scores['count']
+				)
 			)
-		)
-	# for a bayesian ucb:
-	#scores['ucb'] = scores['mean'] + (ucb_scale * scores['std'] / np.sqrt(scores['count']))
 	scores['movieId'] = scores.index
 	scores = scores.sort_values('ucb', ascending=False)
 	recs = scores.loc[scores.index[0:args.n], 'movieId'].values
 	return recs
 
-print("Running UCB1 Bandit with: batch size {}, slate size {}, ucb multiplier {}, and a minimum of {} reviews per movie in the dataset"\
-	.format(args.batch_size, args.n, args.ucb_scale, args.min_review_count))
+print("Running UCB Bandit with: batch size {}, slate size {}, ucb multiplier {}, bayesian: {}, and a minimum of {} reviews per movie in the dataset"\
+	.format(args.batch_size, args.n, args.ucb_scale, args.bayesian, args.min_review_count))
 
 df = get_ratings_20m(min_number_of_reviews=args.min_review_count, balanced_classes=args.balanced_classes)
 print(df.shape)
@@ -77,12 +79,11 @@ print('Running algorithm')
 
 start = time.time()
 for t in range(1, max_time//args.batch_size): #df.t:
-#for t in range(1, 1000): #df.t:
 	t = t * args.batch_size
 	if t % 100000 == 0:
 		if args.verbose == 'TRUE':
 			print(t)
-	recs = ucb1_policy(df=history.loc[history.t<=t,], t = t/args.batch_size, ucb_scale=args.ucb_scale)
+	recs = ucb1_policy(df=history.loc[history.t<=t,], t = t/args.batch_size, ucb_scale=args.ucb_scale) #is this the correct t? or raw t.. 
 	history, action_score = score(history, df, t, args.batch_size, recs)
 	if action_score is not None:
 		action_score = action_score.liked.tolist()
@@ -92,7 +93,12 @@ end = time.time()
 print('finished in {} seconds'.format(end - start))
 
 # save experiment results 
-filename = 'ucb1_' + str(args.batch_size) + '_' + str(args.n) + '_' + str(args.ucb_scale) + '_' + str(args.min_review_count)
+if args.bayesian=='TRUE':
+	algorithm_version = 'bayesian_'
+else:
+	algorithm_version = 'ucb1_'
+
+filename = algorithm_version + str(args.batch_size) + '_' + str(args.n) + '_' + str(args.ucb_scale) + '_' + str(args.min_review_count)
 full_filename = args.result_dir + filename
 
 print("saving results to {}".format(full_filename))
