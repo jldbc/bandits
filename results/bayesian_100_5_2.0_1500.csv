@@ -1,0 +1,2 @@
+batch_size, slate_size, ucb_multiplier, min_reviews_per_movie, mean_reward, sum_reward, num_trials
+100, 5, 2.0, 1500, 0.5685868172353036, 56795, 99888

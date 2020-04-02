@@ -42,7 +42,7 @@ def epsilon_greedy_policy(df, arms, epsilon=0.15, slate_size=5, batch_size=50):
         recs = scores.loc[scores.index[0:slate_size], 'movieId'].values
     return recs
 
-print("Running UCB1 Bandit with: batch size {}, slate size {}, epsilon {}, and a minimum of {} reviews per movie in the dataset"\
+print("Running Epsilon Greedy Bandit with: batch size {}, slate size {}, epsilon {}, and a minimum of {} reviews per movie in the dataset"\
 	.format(args.batch_size, args.n, args.epsilon, args.min_review_count))
 
 df = get_ratings_20m(min_number_of_reviews=args.min_review_count, balanced_classes=args.balanced_classes)

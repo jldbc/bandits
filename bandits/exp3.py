@@ -24,7 +24,7 @@ parser.add_argument('--verbose', '--verbose', help="TRUE if you want updates on 
 
 args = parser.parse_args()
 
-print("Running UCB1 Bandit with: batch size {}, slate size {}, gamma {}, and a minimum of {} reviews per movie in the dataset"\
+print("Running EXP3 Bandit with: batch size {}, slate size {}, gamma {}, and a minimum of {} reviews per movie in the dataset"\
 	.format(args.batch_size, args.n, args.gamma, args.min_review_count))
 
 df = get_ratings_20m(min_number_of_reviews=args.min_review_count, balanced_classes=args.balanced_classes)
